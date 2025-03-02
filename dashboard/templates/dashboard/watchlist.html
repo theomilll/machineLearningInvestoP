@@ -1,0 +1,250 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Watchlists - Investment Insights{% endblock %}
+
+{% block page_title %}Watchlists{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Watchlist Selection and Creation -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Your Watchlists</h5>
+            </div>
+            <div class="card-body">
+                <!-- Watchlist selection -->
+                <div class="mb-4">
+                    <label for="watchlist-select" class="form-label">Select Watchlist</label>
+                    <select id="watchlist-select" class="form-select mb-2">
+                        {% for list in all_watchlists %}
+                        <option value="{{ list.id }}" {% if watchlist and watchlist.id == list.id %}selected{% endif %}>
+                            {{ list.name }} ({{ list.symbols.count }} symbols)
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <div class="d-grid">
+                        <button id="view-watchlist-btn" class="btn btn-primary">
+                            View Watchlist
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Create new watchlist form -->
+                <hr>
+                <h6>Create New Watchlist</h6>
+                <form method="post" action="{% url 'dashboard:watchlist' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ form.name.label_tag }}
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.name.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-2"></i> Create Watchlist
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Set as default -->
+                {% if watchlist %}
+                <hr>
+                <form method="post" action="{% url 'accounts:update_preferences' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="default_watchlist" value="{{ watchlist.id }}">
+                    <input type="hidden" name="theme" value="{{ request.user.preferences.theme }}">
+                    <input type="hidden" name="notification_frequency" value="{{ request.user.preferences.notification_frequency }}">
+                    <input type="hidden" name="email_notifications" value="{% if request.user.preferences.email_notifications %}on{% endif %}">
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-outline-primary" {% if request.user.preferences.default_watchlist.id == watchlist.id %}disabled{% endif %}>
+                            <i class="fas fa-check-circle me-2"></i> Set as Default Watchlist
+                        </button>
+                    </div>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Watchlist Content -->
+    <div class="col-md-8 mb-4">
+        {% if watchlist %}
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ watchlist.name }}</h5>
+                <div>
+                    <a href="{% url 'dashboard:company_list' %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-search me-1"></i> Add Symbols
+                    </a>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if watchlist.symbols.all %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Company</th>
+                                <th>Sector</th>
+                                <th>Latest Rating</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for symbol in watchlist.symbols.all %}
+                            <tr>
+                                <td><a href="{% url 'dashboard:company_detail' symbol.ticker %}">{{ symbol.ticker }}</a></td>
+                                <td>{{ symbol.name }}</td>
+                                <td>{{ symbol.sector }}</td>
+                                <td>
+                                    {% for rating in symbol.ratings.all|slice:":1" %}
+                                    <span class="{% if rating.rating >= 70 %}rating-high{% elif rating.rating >= 40 %}rating-medium{% else %}rating-low{% endif %}">
+                                        {{ rating.rating|floatformat:1 }}
+                                    </span>
+                                    {% empty %}
+                                    <span class="text-muted">No rating</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'dashboard:watchlist_remove_symbol' watchlist.id symbol.ticker %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-times"></i> Remove
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info m-3">
+                    This watchlist is empty. Add symbols from the <a href="{% url 'dashboard:company_list' %}">companies page</a>.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            You don't have any watchlists yet. Create one using the form on the left.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Watchlist Performance Chart -->
+{% if watchlist and watchlist.symbols.all %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Watchlist Performance</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="watchlistRatingChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle watchlist selection
+    const watchlistSelect = document.getElementById('watchlist-select');
+    const viewWatchlistBtn = document.getElementById('view-watchlist-btn');
+    
+    viewWatchlistBtn.addEventListener('click', function() {
+        const selectedWatchlistId = watchlistSelect.value;
+        if (selectedWatchlistId) {
+            window.location.href = "{% url 'dashboard:watchlist' %}".replace('watchlists/', 'watchlists/' + selectedWatchlistId + '/');
+        }
+    });
+    
+    {% if watchlist and watchlist.symbols.all %}
+    // Prepare watchlist ratings chart data
+    const symbols = [];
+    const ratings = [];
+    const colors = [];
+    
+    {% for symbol in watchlist.symbols.all %}
+    symbols.push("{{ symbol.ticker }}");
+    
+    {% for rating in symbol.ratings.all|slice:":1" %}
+    let ratingValue = {{ rating.rating|floatformat:1 }};
+    ratings.push(ratingValue);
+    
+    // Choose color based on rating
+    let color = '#dc3545';  // Red for low ratings
+    if (ratingValue >= 70) {
+        color = '#198754';  // Green for high ratings
+    } else if (ratingValue >= 40) {
+        color = '#fd7e14';  // Orange for medium ratings
+    }
+    colors.push(color);
+    {% empty %}
+    ratings.push(0);
+    colors.push('#6c757d');  // Gray for no rating
+    {% endfor %}
+    {% endfor %}
+    
+    // Create watchlist ratings chart
+    const ctx = document.getElementById('watchlistRatingChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: symbols,
+            datasets: [{
+                label: 'Latest Rating',
+                data: ratings,
+                backgroundColor: colors,
+                borderColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Rating'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Symbol'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Rating: ${context.raw}/100`;
+                        }
+                    }
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

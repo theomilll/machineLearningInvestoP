@@ -1,0 +1,257 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Market Insight - Investment Insights{% endblock %}
+
+{% block page_title %}Market Insight Details{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Market Insight Summary -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Market Insight Summary</h5>
+                <small>Created: {{ insight.created_at|date:"F j, Y, g:i a" }}</small>
+            </div>
+            <div class="card-body">
+                <h3>{{ insight.title }}</h3>
+                <p class="lead">{{ insight.description }}</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5>Trending Topics</h5>
+                        <div class="d-flex flex-wrap">
+                            {% for topic in insight.trending_topics %}
+                            <div class="badge bg-primary p-2 m-1">
+                                {{ topic.name }} 
+                                {% if topic.weight %}
+                                <span class="ms-1 badge bg-light text-dark">{{ topic.weight|floatformat:2 }}</span>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Overview</h5>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                News Articles Analyzed
+                                <span class="badge bg-primary rounded-pill">{{ insight.news_count }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Sectors Covered
+                                <span class="badge bg-primary rounded-pill">{{ sector_data|length }}</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Top Rated Companies
+                                <span class="badge bg-primary rounded-pill">{{ top_companies|length }}</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Sector Performance -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Sector Performance</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="sectorPerformanceChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Companies -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Rated Companies</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if top_companies %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Company</th>
+                                <th>Sector</th>
+                                <th>Rating</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for company in top_companies %}
+                            <tr>
+                                <td><a href="{% url 'dashboard:company_detail' company.ticker %}">{{ company.ticker }}</a></td>
+                                <td>{{ company.name }}</td>
+                                <td>{{ company.sector }}</td>
+                                <td>
+                                    <span class="{% if company.rating >= 70 %}rating-high{% elif company.rating >= 40 %}rating-medium{% else %}rating-low{% endif %}">
+                                        {{ company.rating|floatformat:1 }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info m-3">
+                    No top companies data available in this insight.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sector Details -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Sector Details</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if sector_data %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Sector</th>
+                                <th>Average Rating</th>
+                                <th>Companies</th>
+                                <th>Top Company</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sector in sector_data %}
+                            <tr>
+                                <td>{{ sector.name }}</td>
+                                <td>
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar 
+                                            {% if sector.rating >= 70 %}bg-success
+                                            {% elif sector.rating >= 40 %}bg-warning
+                                            {% else %}bg-danger{% endif %}"
+                                            role="progressbar" 
+                                            style="width: {{ sector.rating }}%;" 
+                                            aria-valuenow="{{ sector.rating }}" 
+                                            aria-valuemin="0" 
+                                            aria-valuemax="100">
+                                            {{ sector.rating|floatformat:1 }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ sector.company_count }}</td>
+                                <td>
+                                    {% if sector.top_company %}
+                                    <a href="{% url 'dashboard:company_detail' sector.top_company.ticker %}">
+                                        {{ sector.top_company.ticker }} - {{ sector.top_company.name }}
+                                    </a>
+                                    {% else %}
+                                    <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'dashboard:company_list' %}?sector={{ sector.name }}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-search"></i> View Companies
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info m-3">
+                    No sector data available in this insight.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if sector_data %}
+    // Prepare sector data
+    const sectors = [];
+    const ratings = [];
+    const colors = [];
+    
+    {% for sector in sector_data %}
+    sectors.push("{{ sector.name }}");
+    ratings.push({{ sector.rating|floatformat:1 }});
+    
+    // Choose color based on rating
+    let color = 'rgba(220, 53, 69, 0.7)'; // Red for low ratings
+    if ({{ sector.rating }} >= 70) {
+        color = 'rgba(25, 135, 84, 0.7)'; // Green for high ratings
+    } else if ({{ sector.rating }} >= 40) {
+        color = 'rgba(255, 193, 7, 0.7)'; // Yellow/Orange for medium ratings
+    }
+    
+    colors.push(color);
+    {% endfor %}
+    
+    // Create sector performance chart
+    const ctx = document.getElementById('sectorPerformanceChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: sectors,
+            datasets: [{
+                label: 'Sector Rating',
+                data: ratings,
+                backgroundColor: colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Rating'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Sector'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `Rating: ${context.raw}/100`;
+                        }
+                    }
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

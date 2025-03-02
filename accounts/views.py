@@ -1,19 +1,16 @@
 """
 Views for the accounts app.
 """
-
-from dashboard.models import UserPreference, Watchlist
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 from django.shortcuts import redirect, render
 from django.urls import reverse_lazy
-from django.views.generic.edit import CreateView, UpdateView
+from django.views.generic.edit import CreateView
 
 from .forms import UserProfileForm, UserRegistrationForm
+from .models import UserPreference, Watchlist
 
 
 class RegisterView(CreateView):
@@ -54,7 +51,6 @@ class RegisterView(CreateView):
         
         return response
 
-
 @login_required
 def profile_view(request):
     """View for user profile page."""
@@ -84,7 +80,6 @@ def profile_view(request):
     }
     
     return render(request, 'accounts/profile.html', context)
-
 
 @login_required
 def update_preferences(request):

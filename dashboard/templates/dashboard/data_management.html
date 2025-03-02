@@ -1,0 +1,297 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Data Management - Investment Insights{% endblock %}
+
+{% block page_title %}Data Management{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Data Collection Form Card -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Start Data Collection</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'dashboard:data_management' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.task_type.id_for_label }}" class="form-label">Task Type</label>
+                        {{ form.task_type }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.symbols.id_for_label }}" class="form-label">Symbols</label>
+                        {{ form.symbols }}
+                        <div class="form-text text-muted">
+                            Enter stock symbols separated by commas. Leave empty to use the default symbols.
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        {{ form.use_cached }}
+                        <label class="form-check-label" for="{{ form.use_cached.id_for_label }}">Use cached data if available</label>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-play me-2"></i> Start Task
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Task Schedule Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Scheduled Tasks</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Daily Data Update</h6>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                        <p class="mb-1 small">Runs daily at midnight. Collects news and market data for all default symbols.</p>
+                    </div>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">Weekly Processing</h6>
+                            <span class="badge bg-success">Active</span>
+                        </div>
+                        <p class="mb-1 small">Runs every Sunday at 1:00 AM. Processes all collected data and updates company ratings.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Data Collection Tasks Card -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Recent Tasks</h5>
+            </div>
+            <div class="card-body p-0">
+                {% if tasks %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Task Type</th>
+                                <th>Started</th>
+                                <th>Status</th>
+                                <th>Parameters</th>
+                                <th>Results</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for task in tasks %}
+                            <tr>
+                                <td>{{ task.get_task_type_display }}</td>
+                                <td>{{ task.started_at|date:"M d, Y, g:i a" }}</td>
+                                <td>
+                                    <span class="badge {% if task.status == 'completed' %}bg-success{% elif task.status == 'running' %}bg-primary{% elif task.status == 'failed' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {{ task.get_status_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#paramsModal{{ task.id }}">
+                                        <i class="fas fa-info-circle"></i> Details
+                                    </button>
+                                    
+                                    <!-- Parameters Modal -->
+                                    <div class="modal fade" id="paramsModal{{ task.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Task Parameters</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <table class="table table-bordered">
+                                                        <tbody>
+                                                            <tr>
+                                                                <th>Symbols</th>
+                                                                <td>
+                                                                    {% if task.parameters.symbols %}
+                                                                    {{ task.parameters.symbols|join:", " }}
+                                                                    {% else %}
+                                                                    Default symbols
+                                                                    {% endif %}
+                                                                </td>
+                                                            </tr>
+                                                            <tr>
+                                                                <th>Use Cached Data</th>
+                                                                <td>{{ task.parameters.use_cached|yesno:"Yes,No" }}</td>
+                                                            </tr>
+                                                            {% if task.parameters.date_range %}
+                                                            <tr>
+                                                                <th>Date Range</th>
+                                                                <td>{{ task.parameters.date_range }}</td>
+                                                            </tr>
+                                                            {% endif %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if task.status == 'completed' %}
+                                    <button class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#resultsModal{{ task.id }}">
+                                        <i class="fas fa-check-circle"></i> Results
+                                    </button>
+                                    
+                                    <!-- Results Modal -->
+                                    <div class="modal fade" id="resultsModal{{ task.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Task Results</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <table class="table table-bordered">
+                                                        <tbody>
+                                                            <tr>
+                                                                <th>Completed At</th>
+                                                                <td>{{ task.completed_at|date:"M d, Y, g:i a" }}</td>
+                                                            </tr>
+                                                            {% if task.result.processed_symbols %}
+                                                            <tr>
+                                                                <th>Processed Symbols</th>
+                                                                <td>{{ task.result.processed_symbols|length }}</td>
+                                                            </tr>
+                                                            {% endif %}
+                                                            {% if task.result.news_count %}
+                                                            <tr>
+                                                                <th>News Articles</th>
+                                                                <td>{{ task.result.news_count }}</td>
+                                                            </tr>
+                                                            {% endif %}
+                                                            {% if task.result.message %}
+                                                            <tr>
+                                                                <th>Message</th>
+                                                                <td>{{ task.result.message }}</td>
+                                                            </tr>
+                                                            {% endif %}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% elif task.status == 'failed' %}
+                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#errorModal{{ task.id }}">
+                                        <i class="fas fa-exclamation-circle"></i> Error
+                                    </button>
+                                    
+                                    <!-- Error Modal -->
+                                    <div class="modal fade" id="errorModal{{ task.id }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title">Task Error</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="alert alert-danger">
+                                                        {{ task.error_message }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info m-3">
+                    No data collection tasks found.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Statistics -->
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Symbols</h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="display-4">{{ symbol_count|default:0 }}</h2>
+                <p class="text-muted">Total tracked symbols</p>
+                <div class="d-grid mt-3">
+                    <a href="{% url 'dashboard:company_list' %}" class="btn btn-outline-primary">View All Symbols</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">News Articles</h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="display-4">{{ news_count|default:0 }}</h2>
+                <p class="text-muted">Total news articles</p>
+                <div class="d-grid mt-3">
+                    <a href="{% url 'dashboard:news_list' %}" class="btn btn-outline-primary">View News</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Company Ratings</h5>
+            </div>
+            <div class="card-body text-center">
+                <h2 class="display-4">{{ rating_count|default:0 }}</h2>
+                <p class="text-muted">Total company ratings</p>
+                <div class="d-grid mt-3">
+                    <a href="#" class="btn btn-outline-primary" id="run-evaluation-btn">Run New Evaluation</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle run evaluation button
+    const runEvaluationBtn = document.getElementById('run-evaluation-btn');
+    
+    runEvaluationBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        if (confirm('Are you sure you want to run a new company evaluation? This may take some time.')) {
+            // Submit form with process task type
+            const form = document.querySelector('form');
+            const taskTypeSelect = document.querySelector('#id_task_type');
+            
+            taskTypeSelect.value = 'process';
+            form.submit();
+        }
+    });
+});
+</script>
+{% endblock %}

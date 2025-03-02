@@ -2,6 +2,7 @@
 Models for the dashboard app.
 """
 
+from accounts.models import UserPreference, Watchlist
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
@@ -19,19 +20,6 @@ class Symbol(models.Model):
 
     def __str__(self):
         return f"{self.ticker} - {self.name}"
-
-
-class Watchlist(models.Model):
-    """Model representing a user's watchlist of symbols."""
-    name = models.CharField(max_length=100)
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='watchlists')
-    symbols = models.ManyToManyField(Symbol, related_name='watchlists')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.name} ({self.user.username})"
-
 
 class CompanyRating(models.Model):
     """Model representing a company rating."""
@@ -53,7 +41,6 @@ class CompanyRating(models.Model):
     def __str__(self):
         return f"{self.symbol.ticker} Rating: {self.rating:.1f}/100"
 
-
 class MarketInsight(models.Model):
     """Model representing market insights."""
     title = models.CharField(max_length=255)
@@ -69,7 +56,6 @@ class MarketInsight(models.Model):
         
     def __str__(self):
         return f"Market Insight: {self.created_at.strftime('%Y-%m-%d %H:%M')}"
-
 
 class NewsArticle(models.Model):
     """Model representing a news article."""
@@ -88,7 +74,6 @@ class NewsArticle(models.Model):
         
     def __str__(self):
         return self.title
-
 
 class DataCollectionTask(models.Model):
     """Model representing a data collection task."""
@@ -120,7 +105,6 @@ class DataCollectionTask(models.Model):
     def __str__(self):
         return f"{self.task_type} Task - {self.status}"
 
-
 class ModelTrainingTask(models.Model):
     """Model representing a model training task."""
     STATUS_CHOICES = [
@@ -146,15 +130,3 @@ class ModelTrainingTask(models.Model):
         
     def __str__(self):
         return f"Model Training Task - {self.status} ({self.epochs_completed}/{self.total_epochs})"
-
-
-class UserPreference(models.Model):
-    """Model representing user preferences."""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='preferences')
-    default_watchlist = models.ForeignKey(Watchlist, on_delete=models.SET_NULL, null=True, blank=True)
-    email_notifications = models.BooleanField(default=True)
-    notification_frequency = models.CharField(max_length=10, default='daily')
-    theme = models.CharField(max_length=10, default='light')
-    
-    def __str__(self):
-        return f"Preferences for {self.user.username}"

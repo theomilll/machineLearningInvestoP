@@ -1,11 +1,11 @@
 """
 Forms for the accounts app.
 """
-
-from dashboard.models import UserPreference, Watchlist
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
+
+from .models import UserPreference, Watchlist
 
 
 class UserRegistrationForm(UserCreationForm):
@@ -22,7 +22,6 @@ class UserRegistrationForm(UserCreationForm):
         for field_name, field in self.fields.items():
             field.widget.attrs['class'] = 'form-control'
 
-
 class UserProfileForm(forms.ModelForm):
     """Form for updating user profile."""
     email = forms.EmailField(required=True)
@@ -32,7 +31,6 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['username', 'email', 'first_name', 'last_name']
-
 
 class UserPreferenceForm(forms.ModelForm):
     """Form for user preferences."""

@@ -34,7 +34,6 @@ except ImportError:
     if settings.DEBUG:
         logger.warning("ML system modules not available. Some features will be disabled.")
 
-
 @shared_task
 def collect_news_data_task(task_id):
     """Task to collect news data."""
@@ -43,14 +42,12 @@ def collect_news_data_task(task_id):
     # Actual implementation would be added once ML system is available
     return {"status": "completed", "message": "Task simulated successfully"}
 
-
 @shared_task
 def collect_market_data_task(task_id):
     """Task to collect market data."""
     logger.info(f"Market data collection task {task_id} started")
     # Placeholder implementation
     return {"status": "completed", "message": "Task simulated successfully"}
-
 
 @shared_task
 def process_data_task(task_id):
@@ -59,7 +56,6 @@ def process_data_task(task_id):
     # Placeholder implementation
     return {"status": "completed", "message": "Task simulated successfully"}
 
-
 @shared_task
 def train_model_task(task_id):
     """Task to train the investment model."""
@@ -67,14 +63,12 @@ def train_model_task(task_id):
     # Placeholder implementation
     return {"status": "completed", "message": "Task simulated successfully"}
 
-
 @shared_task
 def evaluate_companies_task(model_path=None):
     """Task to evaluate companies using the trained model."""
     logger.info(f"Company evaluation task started for model: {model_path}")
     # Placeholder implementation
     return {"status": "completed", "message": "Task simulated successfully"}
-
 
 @shared_task
 def scheduled_data_update():

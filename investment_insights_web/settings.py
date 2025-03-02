@@ -47,10 +47,10 @@ INSTALLED_APPS = [
     'django_filters',
     'channels',
     
-    # Project apps
+    # Project apps - accounts must come before dashboard since dashboard now depends on accounts models
+    'accounts.apps.AccountsConfig',
     'dashboard.apps.DashboardConfig',
     'insights_api.apps.InsightsApiConfig',
-    'accounts.apps.AccountsConfig',
 ]
 
 MIDDLEWARE = [

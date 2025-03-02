@@ -1,0 +1,174 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Profile - Investment Insights{% endblock %}
+
+{% block page_title %}User Profile{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Profile Info Card -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Profile Information</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                        {{ form.username }}
+                        {% if form.username.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.username.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                        {{ form.email }}
+                        {% if form.email.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.email.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">First Name</label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.first_name.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">Last Name</label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.last_name.errors }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            Update Profile
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Preferences Card -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">User Preferences</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'accounts:update_preferences' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="theme" class="form-label">Theme</label>
+                        <select name="theme" id="theme" class="form-select">
+                            <option value="light" {% if preferences.theme == 'light' %}selected{% endif %}>Light</option>
+                            <option value="dark" {% if preferences.theme == 'dark' %}selected{% endif %}>Dark</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="default_watchlist" class="form-label">Default Watchlist</label>
+                        <select name="default_watchlist" id="default_watchlist" class="form-select">
+                            <option value="">None</option>
+                            {% for watchlist in watchlists %}
+                            <option value="{{ watchlist.id }}" {% if preferences.default_watchlist.id == watchlist.id %}selected{% endif %}>{{ watchlist.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="email_notifications" name="email_notifications" {% if preferences.email_notifications %}checked{% endif %}>
+                            <label class="form-check-label" for="email_notifications">Email Notifications</label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="notification_frequency" class="form-label">Notification Frequency</label>
+                        <select name="notification_frequency" id="notification_frequency" class="form-select">
+                            <option value="daily" {% if preferences.notification_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                            <option value="weekly" {% if preferences.notification_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                            <option value="never" {% if preferences.notification_frequency == 'never' %}selected{% endif %}>Never</option>
+                        </select>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            Update Preferences
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Watchlists Card -->
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Your Watchlists</h5>
+                <a href="{% url 'dashboard:watchlist' %}" class="btn btn-sm btn-outline-primary">Manage Watchlists</a>
+            </div>
+            <div class="card-body">
+                {% if watchlists %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Companies</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for watchlist in watchlists %}
+                            <tr>
+                                <td>{{ watchlist.name }}</td>
+                                <td>{{ watchlist.symbols.count }}</td>
+                                <td>{{ watchlist.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <a href="{% url 'dashboard:watchlist' watchlist.id %}" class="btn btn-sm btn-outline-secondary">
+                                        View
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    You don't have any watchlists yet.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

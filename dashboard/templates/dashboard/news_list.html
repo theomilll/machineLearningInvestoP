@@ -1,0 +1,278 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}News - Investment Insights{% endblock %}
+
+{% block page_title %}News Articles{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <!-- Filters Card -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Filter News</h5>
+            </div>
+            <div class="card-body">
+                <form method="get" id="filter-form">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label for="search" class="form-label">Search</label>
+                            <input type="text" class="form-control" id="search" name="search" value="{{ search }}">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="source" class="form-label">Source</label>
+                            <select class="form-select" id="source" name="source">
+                                <option value="">All Sources</option>
+                                {% for src in sources %}
+                                <option value="{{ src }}" {% if source == src %}selected{% endif %}>{{ src }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="start_date" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date }}">
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="end_date" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date }}">
+                        </div>
+                        <div class="col-md-1 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">Filter</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- News Articles -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">News Articles</h5>
+                <span>{{ articles.paginator.count }} articles found</span>
+            </div>
+            <div class="card-body p-0">
+                {% if articles %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th style="width: 40%">Title</th>
+                                <th style="width: 35%">Description</th>
+                                <th style="width: 10%">Source</th>
+                                <th style="width: 10%">Published</th>
+                                <th style="width: 5%">Sentiment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for article in articles %}
+                            <tr>
+                                <td>
+                                    <a href="{{ article.url }}" target="_blank" class="text-decoration-none">{{ article.title }}</a>
+                                    <div class="mt-1">
+                                        {% for symbol in article.related_symbols.all %}
+                                        <a href="{% url 'dashboard:company_detail' symbol.ticker %}" class="badge bg-secondary me-1">{{ symbol.ticker }}</a>
+                                        {% endfor %}
+                                    </div>
+                                </td>
+                                <td class="text-muted">{{ article.description|truncatechars:150 }}</td>
+                                <td>{{ article.source }}</td>
+                                <td>{{ article.published_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge {% if article.sentiment > 0.2 %}bg-success{% elif article.sentiment < -0.2 %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {% if article.sentiment > 0.2 %}
+                                            Positive
+                                        {% elif article.sentiment < -0.2 %}
+                                            Negative
+                                        {% else %}
+                                            Neutral
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if articles.has_other_pages %}
+                <div class="card-footer">
+                    <nav>
+                        <ul class="pagination justify-content-center mb-0">
+                            {% if articles.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if search %}&search={{ search }}{% endif %}{% if source %}&source={{ source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ articles.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if source %}&source={{ source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">Previous</a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for i in articles.paginator.page_range %}
+                            {% if articles.number == i %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ i }}</span>
+                            </li>
+                            {% elif i > articles.number|add:'-3' and i < articles.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ i }}{% if search %}&search={{ search }}{% endif %}{% if source %}&source={{ source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">{{ i }}</a>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if articles.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ articles.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if source %}&source={{ source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ articles.paginator.num_pages }}{% if search %}&search={{ search }}{% endif %}{% if source %}&source={{ source }}{% endif %}{% if start_date %}&start_date={{ start_date }}{% endif %}{% if end_date %}&end_date={{ end_date }}{% endif %}">Last</a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+                
+                {% else %}
+                <div class="alert alert-info m-3">
+                    No news articles found with the current filters.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sentiment Analysis -->
+{% if articles %}
+<div class="row mt-4">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Sentiment Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="sentimentChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Top Sources</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="sourcesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if articles %}
+    // Count sentiments
+    let positive = 0;
+    let neutral = 0;
+    let negative = 0;
+    
+    // Count sources
+    const sourceCount = {};
+    
+    {% for article in articles %}
+    // Sentiment
+    {% if article.sentiment > 0.2 %}
+    positive++;
+    {% elif article.sentiment < -0.2 %}
+    negative++;
+    {% else %}
+    neutral++;
+    {% endif %}
+    
+    // Source
+    const source = "{{ article.source }}";
+    if (sourceCount[source]) {
+        sourceCount[source]++;
+    } else {
+        sourceCount[source] = 1;
+    }
+    {% endfor %}
+    
+    // Create sentiment chart
+    const sentimentCtx = document.getElementById('sentimentChart').getContext('2d');
+    new Chart(sentimentCtx, {
+        type: 'pie',
+        data: {
+            labels: ['Positive', 'Neutral', 'Negative'],
+            datasets: [{
+                data: [positive, neutral, negative],
+                backgroundColor: ['#198754', '#6c757d', '#dc3545'],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Create sources chart (top 5)
+    const sortedSources = Object.entries(sourceCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+    
+    const sourcesCtx = document.getElementById('sourcesChart').getContext('2d');
+    new Chart(sourcesCtx, {
+        type: 'bar',
+        data: {
+            labels: sortedSources.map(s => s[0]),
+            datasets: [{
+                label: 'Article Count',
+                data: sortedSources.map(s => s[1]),
+                backgroundColor: '#0d6efd',
+                borderColor: '#0d6efd',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Articles'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Source'
+                    }
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

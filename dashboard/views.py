@@ -2,6 +2,7 @@
 Views for the dashboard app.
 """
 
+from accounts.models import UserPreference, Watchlist
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
@@ -14,7 +15,7 @@ from django.views.decorators.http import require_POST
 
 from .forms import DataCollectionForm, ModelTrainingForm, WatchlistForm
 from .models import (CompanyRating, DataCollectionTask, MarketInsight,
-                     ModelTrainingTask, NewsArticle, Symbol, Watchlist)
+                     ModelTrainingTask, NewsArticle, Symbol)
 from .tasks import (collect_market_data_task, collect_news_data_task,
                     process_data_task, train_model_task)
 

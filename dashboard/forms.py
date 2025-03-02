@@ -2,10 +2,11 @@
 Forms for the dashboard app.
 """
 
+from accounts.models import UserPreference, Watchlist
 from django import forms
 from django.conf import settings
 
-from .models import UserPreference, Watchlist
+from .models import Symbol
 
 
 class WatchlistForm(forms.ModelForm):
@@ -17,7 +18,6 @@ class WatchlistForm(forms.ModelForm):
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Watchlist Name'})
         }
-
 
 class DataCollectionForm(forms.Form):
     """Form for initiating data collection tasks."""
@@ -62,7 +62,6 @@ class DataCollectionForm(forms.Form):
         # Join back into comma-separated string
         return ','.join(symbols_list)
 
-
 class ModelTrainingForm(forms.Form):
     """Form for initiating model training tasks."""
     
@@ -101,40 +100,6 @@ class ModelTrainingForm(forms.Form):
         
         # Join back into comma-separated string
         return ','.join(symbols_list)
-
-
-class UserPreferenceForm(forms.ModelForm):
-    """Form for editing user preferences."""
-    
-    THEME_CHOICES = [
-        ('light', 'Light'),
-        ('dark', 'Dark'),
-    ]
-    
-    NOTIFICATION_CHOICES = [
-        ('daily', 'Daily'),
-        ('weekly', 'Weekly'),
-        ('never', 'Never'),
-    ]
-    
-    theme = forms.ChoiceField(
-        choices=THEME_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    notification_frequency = forms.ChoiceField(
-        choices=NOTIFICATION_CHOICES,
-        widget=forms.Select(attrs={'class': 'form-select'})
-    )
-    
-    class Meta:
-        model = UserPreference
-        fields = ['default_watchlist', 'email_notifications', 'notification_frequency', 'theme']
-        widgets = {
-            'default_watchlist': forms.Select(attrs={'class': 'form-select'}),
-            'email_notifications': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-
 
 class SymbolSearchForm(forms.Form):
     """Form for searching symbols."""
