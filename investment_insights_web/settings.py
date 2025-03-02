@@ -9,7 +9,7 @@ import environ
 
 # Initialize environment variables
 env = environ.Env(
-    DEBUG=(bool, False),
+    DEBUG=(bool, True),
     SECRET_KEY=(str, 'default-secret-key-for-dev'),
     ALLOWED_HOSTS=(list, ['localhost', '127.0.0.1']),
     DATABASE_URL=(str, 'sqlite:///db.sqlite3')
@@ -145,7 +145,7 @@ REST_FRAMEWORK = {
 }
 
 # Authentication
-LOGIN_REDIRECT_URL = 'dashboard:index'
+LOGIN_REDIRECT_URL = 'dashboard:index'  # This should redirect to dashboard after login
 LOGOUT_REDIRECT_URL = 'accounts:login'
 LOGIN_URL = 'accounts:login'
 
