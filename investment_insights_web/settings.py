@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 import environ
+from celery.schedules import crontab
 
 # Initialize environment variables
 env = environ.Env(
@@ -148,6 +149,17 @@ REST_FRAMEWORK = {
 LOGIN_REDIRECT_URL = 'dashboard:index'  # This should redirect to dashboard after login
 LOGOUT_REDIRECT_URL = 'accounts:login'
 LOGIN_URL = 'accounts:login'
+
+CELERY_BEAT_SCHEDULE = {
+    'daily-data-update': {
+        'task': 'dashboard.tasks.scheduled_data_update',
+        'schedule': crontab(hour=0, minute=0),  # Run at midnight
+    },
+    'weekly-model-evaluation': {
+        'task': 'dashboard.tasks.evaluate_companies_task',
+        'schedule': crontab(day_of_week=0, hour=1, minute=0),  # Run at 1 AM on Sundays
+    },
+}
 
 # Celery Configuration
 CELERY_BROKER_URL = env('REDIS_URL', default='redis://localhost:6379/0')
