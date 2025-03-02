@@ -1,0 +1,35 @@
+# Django and extensions
+Django>=4.2.0
+django-crispy-forms>=2.0
+crispy-bootstrap5>=0.7
+django-rest-framework>=0.1.0
+django-celery-results>=2.4.0
+django-celery-beat>=2.4.0
+django-environ>=0.9.0
+django-filter>=23.1
+djangorestframework>=3.14.0
+whitenoise>=6.4.0
+channels>=4.0.0
+
+# Celery for background tasks
+celery>=5.2.7
+redis>=4.4.0
+
+# Data processing
+pandas>=1.5.0
+numpy>=1.23.3
+scikit-learn>=1.1.2
+matplotlib>=3.6.0
+seaborn>=0.12.0
+plotly>=5.13.0
+
+# Investment system dependencies
+requests>=2.28.1
+yfinance>=0.2.3
+nltk>=3.7
+torch>=1.12.1
+
+# Deployment
+gunicorn>=20.1.0
+psycopg2-binary>=2.9.5
+dj-database-url>=1.2.0

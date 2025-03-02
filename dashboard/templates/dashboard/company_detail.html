@@ -1,0 +1,360 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}{{ symbol.ticker }} - {{ symbol.name }} | Investment Insights{% endblock %}
+
+{% block page_title %}Company Details: {{ symbol.ticker }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Company Info Card -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">{{ symbol.name }} ({{ symbol.ticker }})</h4>
+                    <div>
+                        <!-- Watchlist dropdown -->
+                        <div class="dropdown d-inline-block me-2">
+                            <button class="btn btn-outline-primary dropdown-toggle" type="button" id="watchlistDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-star"></i> Add to Watchlist
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="watchlistDropdown">
+                                {% for watchlist in watchlists %}
+                                <li>
+                                    {% if watchlist.id in in_watchlists %}
+                                    <form method="post" action="{% url 'dashboard:watchlist_remove_symbol' watchlist.id symbol.ticker %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.path }}">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="fas fa-times"></i> Remove from {{ watchlist.name }}
+                                        </button>
+                                    </form>
+                                    {% else %}
+                                    <form method="post" action="{% url 'dashboard:watchlist_add_symbol' watchlist.id symbol.ticker %}">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="next" value="{{ request.path }}">
+                                        <button type="submit" class="dropdown-item">
+                                            <i class="fas fa-plus"></i> Add to {{ watchlist.name }}
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </li>
+                                {% empty %}
+                                <li><a class="dropdown-item" href="{% url 'dashboard:watchlist' %}">Create a watchlist first</a></li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Company Information</h5>
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Sector</th>
+                                    <td>{{ symbol.sector }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Industry</th>
+                                    <td>{{ symbol.industry }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Country</th>
+                                    <td>{{ symbol.country }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Market Cap</th>
+                                    <td>{{ symbol.market_cap|default:0|intcomma }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Last Updated</th>
+                                    <td>{{ symbol.last_updated|date:"F j, Y, g:i a" }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        {% if ratings.0 %}
+                        <h5>Latest Rating</h5>
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="display-4 mb-3 {% if ratings.0.rating >= 70 %}rating-high{% elif ratings.0.rating >= 40 %}rating-medium{% else %}rating-low{% endif %}">
+                                    {{ ratings.0.rating|floatformat:1 }}
+                                </div>
+                                <p class="mb-0">Rated on {{ ratings.0.rating_date|date:"F j, Y" }}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="card-title">Confidence</h6>
+                                        <p class="h4">{{ ratings.0.confidence|floatformat:2 }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h6 class="card-title">News Relevance</h6>
+                                        <p class="h4">{{ ratings.0.news_relevance|floatformat:2 }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            No ratings available for this company yet.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Rating History Chart -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Rating History</h5>
+            </div>
+            <div class="card-body">
+                {% if ratings|length > 1 %}
+                <canvas id="ratingChart" height="300"></canvas>
+                {% else %}
+                <div class="alert alert-info">
+                    Not enough rating history to display a chart.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Rating Components -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Rating Components</h5>
+            </div>
+            <div class="card-body">
+                {% if ratings.0 and ratings.0.rating_components %}
+                <canvas id="componentChart" height="300"></canvas>
+                {% else %}
+                <div class="alert alert-info">
+                    No rating component data available.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Related News -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Related News</h5>
+                <a href="{% url 'dashboard:news_list' %}?search={{ symbol.ticker }}" class="btn btn-sm btn-outline-primary">View All News</a>
+            </div>
+            <div class="card-body">
+                {% if news %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Source</th>
+                                <th>Published</th>
+                                <th>Sentiment</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for article in news %}
+                            <tr>
+                                <td>
+                                    <a href="{{ article.url }}" target="_blank">{{ article.title }}</a>
+                                </td>
+                                <td>{{ article.source }}</td>
+                                <td>{{ article.published_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <span class="badge {% if article.sentiment > 0.2 %}bg-success{% elif article.sentiment < -0.2 %}bg-danger{% else %}bg-secondary{% endif %}">
+                                        {% if article.sentiment > 0.2 %}
+                                            Positive
+                                        {% elif article.sentiment < -0.2 %}
+                                            Negative
+                                        {% else %}
+                                            Neutral
+                                        {% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    No related news available for this company.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if ratings|length > 1 %}
+    // Rating history chart
+    const dates = [];
+    const ratingValues = [];
+    const confidenceValues = [];
+    const newsRelevanceValues = [];
+    
+    {% for rating in ratings %}
+    dates.unshift("{{ rating.rating_date|date:'M d, Y' }}");
+    ratingValues.unshift({{ rating.rating|floatformat:1 }});
+    confidenceValues.unshift({{ rating.confidence|floatformat:2 }} * 100);
+    newsRelevanceValues.unshift({{ rating.news_relevance|floatformat:2 }} * 100);
+    {% endfor %}
+    
+    const ratingCtx = document.getElementById('ratingChart').getContext('2d');
+    new Chart(ratingCtx, {
+        type: 'line',
+        data: {
+            labels: dates,
+            datasets: [
+                {
+                    label: 'Rating',
+                    data: ratingValues,
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    fill: false
+                },
+                {
+                    label: 'Confidence',
+                    data: confidenceValues,
+                    borderColor: '#6c757d',
+                    backgroundColor: 'rgba(108, 117, 125, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    borderDash: [5, 5],
+                    fill: false
+                },
+                {
+                    label: 'News Relevance',
+                    data: newsRelevanceValues,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.1,
+                    borderDash: [2, 2],
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Value'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.raw}`;
+                        }
+                    }
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    {% endif %}
+    
+    {% if ratings.0 and ratings.0.rating_components %}
+    // Rating components chart
+    const components = [];
+    const values = [];
+    const colors = [
+        'rgba(13, 110, 253, 0.7)',
+        'rgba(25, 135, 84, 0.7)',
+        'rgba(220, 53, 69, 0.7)',
+        'rgba(255, 193, 7, 0.7)',
+        'rgba(108, 117, 125, 0.7)'
+    ];
+    
+    {% for key, value in ratings.0.rating_components.items %}
+    components.push("{{ key }}");
+    values.push({{ value|floatformat:2 }} * 100);
+    {% endfor %}
+    
+    const componentCtx = document.getElementById('componentChart').getContext('2d');
+    new Chart(componentCtx, {
+        type: 'radar',
+        data: {
+            labels: components,
+            datasets: [{
+                label: 'Rating Components',
+                data: values,
+                backgroundColor: 'rgba(13, 110, 253, 0.2)',
+                borderColor: 'rgba(13, 110, 253, 0.7)',
+                pointBackgroundColor: 'rgba(13, 110, 253, 1)',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: 'rgba(13, 110, 253, 1)',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            scales: {
+                r: {
+                    angleLines: {
+                        display: true
+                    },
+                    suggestedMin: 0,
+                    suggestedMax: 100
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.label}: ${context.raw}%`;
+                        }
+                    }
+                }
+            },
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+    {% endif %}
+});
+</script>
+{% endblock %}

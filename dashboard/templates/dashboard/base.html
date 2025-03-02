@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Investment Insights{% endblock %}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom CSS -->
+    <style>
+        :root {
+            --sidebar-width: 250px;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            padding: 0;
+            z-index: 100;
+            background-color: #212529;
+            color: #fff;
+        }
+
+        .sidebar-header {
+            padding: 1rem;
+            background-color: #0d6efd;
+        }
+
+        .sidebar-header h3 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+        }
+
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.15);
+            font-weight: 600;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 10px;
+            width: 20px;
+            text-align: center;
+        }
+
+        .content {
+            margin-left: var(--sidebar-width);
+            padding: 1rem;
+        }
+
+        .top-bar {
+            background-color: #fff;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .card {
+            margin-bottom: 1rem;
+            border: none;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+            font-weight: 600;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+        }
+
+        /* Rating colors */
+        .rating-high {
+            color: #198754;  /* Green */
+        }
+
+        .rating-medium {
+            color: #fd7e14;  /* Orange */
+        }
+
+        .rating-low {
+            color: #dc3545;  /* Red */
+        }
+
+        /* Loading spinner */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        /* Dark mode styles */
+        .dark-mode {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        .dark-mode .card,
+        .dark-mode .top-bar,
+        .dark-mode .modal-content {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        .dark-mode .card-header,
+        .dark-mode .modal-header {
+            background-color: #2a2a2a;
+            border-bottom: 1px solid #333;
+        }
+
+        .dark-mode .table {
+            color: #e0e0e0;
+        }
+
+        .dark-mode .table-hover tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .dark-mode .modal-header .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 100%;
+                position: relative;
+                height: auto;
+            }
+            .content {
+                margin-left: 0;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>Investment Insights</h3>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}" href="{% url 'dashboard:index' %}">
+                    <i class="fas fa-home"></i> Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'company_list' %}active{% endif %}" href="{% url 'dashboard:company_list' %}">
+                    <i class="fas fa-building"></i> Companies
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'sector_analysis' %}active{% endif %}" href="{% url 'dashboard:sector_analysis' %}">
+                    <i class="fas fa-chart-pie"></i> Sector Analysis
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'watchlist' %}active{% endif %}" href="{% url 'dashboard:watchlist' %}">
+                    <i class="fas fa-star"></i> Watchlists
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'news_list' %}active{% endif %}" href="{% url 'dashboard:news_list' %}">
+                    <i class="fas fa-newspaper"></i> News
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'data_management' %}active{% endif %}" href="{% url 'dashboard:data_management' %}">
+                    <i class="fas fa-database"></i> Data Management
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'model_training' %}active{% endif %}" href="{% url 'dashboard:model_training' %}">
+                    <i class="fas fa-brain"></i> Model Training
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'admin:index' %}">
+                    <i class="fas fa-cog"></i> Admin
+                </a>
+            </li>
+            <li class="nav-item mt-5">
+                <a class="nav-link" href="{% url 'logout' %}">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+        <!-- Top Bar -->
+        <div class="top-bar d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">{% block page_title %}Dashboard{% endblock %}</h4>
+            <div>
+                <button id="theme-toggle" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-moon"></i> Dark Mode
+                </button>
+                <span class="ms-3">Welcome, {{ request.user.username }}</span>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Main Content -->
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <script>
+        // Theme toggle
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check for saved theme preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('theme-toggle').innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+            }
+
+            // Theme toggle button
+            document.getElementById('theme-toggle').addEventListener('click', function() {
+                if (document.body.classList.contains('dark-mode')) {
+                    document.body.classList.remove('dark-mode');
+                    this.innerHTML = '<i class="fas fa-moon"></i> Dark Mode';
+                    localStorage.setItem('theme', 'light');
+                } else {
+                    document.body.classList.add('dark-mode');
+                    this.innerHTML = '<i class="fas fa-sun"></i> Light Mode';
+                    localStorage.setItem('theme', 'dark');
+                }
+            });
+
+            // Auto-dismiss alerts after 5 seconds
+            setTimeout(function() {
+                $('.alert').alert('close');
+            }, 5000);
+        });
+
+        // Format rating values with color
+        function formatRating(rating) {
+            let colorClass = 'rating-low';
+            if (rating >= 70) {
+                colorClass = 'rating-high';
+            } else if (rating >= 40) {
+                colorClass = 'rating-medium';
+            }
+            return '<span class="' + colorClass + '">' + rating.toFixed(1) + '</span>';
+        }
+
+        // Format date in readable format
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+            return new Date(dateString).toLocaleDateString(undefined, options);
+        }
+
+        // Show loading spinner
+        function showLoading() {
+            const overlay = document.createElement('div');
+            overlay.className = 'loading-overlay';
+            overlay.innerHTML = '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>';
+            document.body.appendChild(overlay);
+        }
+
+        // Hide loading spinner
+        function hideLoading() {
+            const overlay = document.querySelector('.loading-overlay');
+            if (overlay) {
+                overlay.remove();
+            }
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
